@@ -15,12 +15,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
-  async validate(
+  validate(
     accessToken: string,
     refreshToken: string,
     profile: GoogleProfile,
     done: VerifyCallback,
-  ): Promise<void> {
+  ): void {
     const { name, emails, photos } = profile;
     const user = {
       email: emails[0].value,
@@ -29,6 +29,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       picture: photos[0].value,
       accessToken,
     };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     done(null, user);
   }
 }

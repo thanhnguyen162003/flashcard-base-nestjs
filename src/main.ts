@@ -1,21 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ZodValidationPipe } from './interceptors/zod-validation.pipe';
+import { baseSchema } from './interceptors/base.schema';
 import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Class validator
+  app.useGlobalPipes(new ValidationPipe());
   // Enable CORS
   app.enableCors();
   // Set global prefix
   app.setGlobalPrefix('api/v1');
-  // Enable validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  // Enable Zod validation pipe
+  app.useGlobalPipes(new ZodValidationPipe(baseSchema));
   // Get port from environment variable or use default
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
