@@ -13,3 +13,172 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+model User {
+  id String @id @default(uuid())
+  email String @unique
+  name String?
+  avatar String?
+  hash String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Flashcard Flashcard[]
+}
+// Flashcard model
+model Flashcard {
+  id                    String    @id @default(uuid())
+  userId                String
+  name                  String
+  slug                  String    @unique
+  description           String?
+  status                String
+  created               Boolean   @default(false)
+  vote                  Int?      @default(0)
+  totalView             Int?      @default(0)
+  todayView             Int?      @default(0)
+  star                  Float?    @default(0)
+  isArtificialIntelligence Boolean? @default(false)
+  isCreatedBySystem     Boolean?  @default(false)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+  createdBy             String?
+  updatedBy             String?
+
+  // Relations
+  user                  User?     @relation(fields: [userId], references: [id])
+  userLikes             UserLike[]
+  contents              FlashcardContent[]
+  tags                  FlashcardTag[]
+  folders               FlashcardFolder[]
+  fsrs                  FSRS?
+  containers            Container[]
+}
+
+// Container model
+model Container {
+  id                    String    @id @default(uuid())
+  userId                String
+  flashcardId           String
+  viewAt                DateTime  @default(now())
+  shuffleFlashcards     Boolean   @default(false)
+  learnRound            Int?
+  learnMode             String?   // Enum: LearnMode
+  shuffleLearn          Boolean   @default(false)
+  studyStarred          Boolean   @default(false)
+  answerWith            String?   // Enum: StudySetAnswerMode
+  multipleAnswerMode    String?   // Enum: MultipleAnswerMode
+  extendedFeedbackBank  Boolean   @default(false)
+  enableCardsSorting    Boolean   @default(false)
+  cardsRound            Int?
+  cardsStudyStarred     Boolean   @default(false)
+  cardsAnswerWith       String?   // Enum: LimitedStudySetAnswerMode
+  matchStudyStarred     Boolean   @default(false)
+  retrievability        Float     @default(0)
+  fsrsParameters        Float[]   @default([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+  cardsPerDay           Int       @default(20)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  flashcard             Flashcard @relation(fields: [flashcardId], references: [id])
+  studiableTerms        StudiableTerm[]
+  starredTerms          StarredTerm[]
+}
+
+// StudiableTerm model
+model StudiableTerm {
+  id                String    @id @default(uuid())
+  containerId       String
+  flashcardContentId String
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  container         Container @relation(fields: [containerId], references: [id])
+  flashcardContent  FlashcardContent @relation(fields: [flashcardContentId], references: [id])
+}
+
+// StarredTerm model
+model StarredTerm {
+  id                String    @id @default(uuid())
+  containerId       String
+  flashcardContentId String
+  createdAt         DateTime  @default(now())
+
+  // Relations
+  container         Container @relation(fields: [containerId], references: [id])
+  flashcardContent  FlashcardContent @relation(fields: [flashcardContentId], references: [id])
+}
+
+// FSRS model
+model FSRS {
+  id                String    @id @default(uuid())
+  flashcardId       String    @unique
+  userId            String
+  rating            Int       @default(0)
+  difficulty        Float     @default(5.0)
+  stability         Float     @default(0.0)
+  state             String    @default("New") // New, Learning, Review, Relearning
+  dueDate           DateTime?
+  lastReviewDate    DateTime?
+  timeSpent         Float     @default(0)
+  lastReviewHistory DateTime[]
+  timeSpentHistory  Float[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  flashcard         Flashcard @relation(fields: [flashcardId], references: [id])
+}
+
+// FlashcardContent model
+model FlashcardContent {
+  id          String   @id @default(uuid())
+  flashcardId String
+  term        String
+  definition  String?
+  rank        Int
+  image       String?
+  status      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+  studiableTerms StudiableTerm[]
+  starredTerms   StarredTerm[]
+}
+
+// FlashcardTag model
+model FlashcardTag {
+  id          String   @id @default(uuid())
+  flashcardId String
+  tagId       String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+}
+
+// FlashcardFolder model
+model FlashcardFolder {
+  id          String   @id @default(uuid())
+  flashcardId String
+  folderId    String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+}
+
+// UserLike model
+model UserLike {
+  id          String   @id @default(uuid())
+  userId      String
+  flashcardId String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+}
