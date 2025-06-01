@@ -29,7 +29,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       picture: photos[0].value,
       accessToken,
     };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     done(null, user);
   }
 }
