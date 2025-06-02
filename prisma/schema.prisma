@@ -13,6 +13,13 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum FlashcardStatus {
+  ACTIVE
+  INACTIVE
+  DELETED
+}
+
 model User {
   id String @id @default(uuid())
   email String @unique
@@ -24,35 +31,35 @@ model User {
 
   Flashcard Flashcard[]
 }
+
 // Flashcard model
 model Flashcard {
-  id                    String    @id @default(uuid())
-  userId                String
+  id                    String              @id @default(uuid())
   name                  String
-  slug                  String    @unique
+  slug                  String              @unique
   description           String?
-  status                String
-  created               Boolean   @default(false)
-  vote                  Int?      @default(0)
-  totalView             Int?      @default(0)
-  todayView             Int?      @default(0)
-  star                  Float?    @default(0)
-  isArtificialIntelligence Boolean? @default(false)
-  isCreatedBySystem     Boolean?  @default(false)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  deletedAt             DateTime?
-  createdBy             String?
-  updatedBy             String?
-
-  // Relations
-  user                  User?     @relation(fields: [userId], references: [id])
-  userLikes             UserLike[]
+  status                FlashcardStatus     @default(ACTIVE)
+  isPublic              Boolean             @default(false)
+  vote                  Int                 @default(0)
+  totalView             Int                 @default(0)
+  todayView             Int                 @default(0)
+  star                  Int                 @default(0)
+  isArtificialIntelligence Boolean          @default(false)
+  isCreatedBySystem     Boolean             @default(false)
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id])
   contents              FlashcardContent[]
-  tags                  FlashcardTag[]
-  folders               FlashcardFolder[]
-  fsrs                  FSRS?
+  tags                  Tag[]
+  folders               Folder[]
   containers            Container[]
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([slug])
+  @@index([isPublic])
+  FlashcardTag FlashcardTag[]
+  FlashcardFolder FlashcardFolder[]
 }
 
 // Container model
@@ -181,4 +188,31 @@ model UserLike {
 
   // Relations
   flashcard   Flashcard @relation(fields: [flashcardId], references: [id])
+}
+
+model Tag {
+  id          String      @id @default(uuid())
+  name        String
+  slug        String      @unique
+  description String?
+  flashcards  Flashcard[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([slug])
+}
+
+model Folder {
+  id          String      @id @default(uuid())
+  name        String
+  slug        String      @unique
+  description String?
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  flashcards  Flashcard[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([slug])
 }

@@ -3,9 +3,11 @@ import { FlashcardController } from './flashcard.controller';
 import { FlashcardService } from './flashcard.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { FlashcardMapper, ContentMapper, StudySessionMapper } from './mappers';
+import { PaginationModule } from '../common/pagination/pagination.module';
+import { ContainerModule } from '../container/container.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, PaginationModule, ContainerModule],
   controllers: [FlashcardController],
   providers: [
     FlashcardService,

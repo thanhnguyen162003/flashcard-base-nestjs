@@ -8,6 +8,11 @@ import {
 } from './dto/flashcard.dto';
 import { FlashcardContent } from 'src/entities/FlashcardContent';
 import { FlashcardMapper, ContentMapper, StudySessionMapper } from './mappers';
+import { PaginationService } from '../common/pagination/pagination.service';
+import { PaginationQueryDto } from '../common/pagination/pagination.dto';
+import { PaginatedResponseDto } from '../common/pagination/pagination.dto';
+import { FlashcardResponseDto } from './dto/flashcard.dto';
+import { ContainerService } from '../container/container.service';
 
 @Injectable()
 export class FlashcardService {
@@ -16,34 +21,74 @@ export class FlashcardService {
     private readonly flashcardMapper: FlashcardMapper,
     private readonly contentMapper: ContentMapper,
     private readonly studySessionMapper: StudySessionMapper,
+    private readonly paginationService: PaginationService,
+    private readonly containerService: ContainerService,
   ) {}
 
   // Flashcard Set Operations
-  async getFlashcards(userId: string) {
-    const flashcards = await this.prisma.flashcard.findMany({
-      where: { userId },
-      include: {
-        contents: true,
-        tags: true,
-        folders: true,
-      },
-    });
-    return this.flashcardMapper.toResponseList(flashcards);
+  async getFlashcards(
+    query: PaginationQueryDto,
+    userId?: string,
+  ): Promise<PaginatedResponseDto<FlashcardResponseDto>> {
+    const { page = 1, limit = 10 } = query;
+    const skip = this.paginationService.getSkip(page, limit);
+
+    const where = {
+      isPublic: true,
+      status: 'ACTIVE',
+      ...(userId && { userId }),
+    };
+
+    const [total, flashcards] = await Promise.all([
+      this.prisma.flashcard.count({ where }),
+      this.prisma.flashcard.findMany({
+        where,
+        include: {
+          contents: true,
+          tags: true,
+          folders: true,
+          containers: {
+            where: userId ? { userId } : undefined,
+          },
+        },
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+    ]);
+
+    const mappedFlashcards = this.flashcardMapper.toResponseList(flashcards);
+    return this.paginationService.createPaginatedResponse(
+      mappedFlashcards,
+      total,
+      page,
+      limit,
+    );
   }
 
-  async getFlashcardById(id: string) {
+  async getFlashcardById(id: string, userId?: string) {
     const flashcard = await this.prisma.flashcard.findUnique({
       where: { id },
       include: {
         contents: true,
         tags: true,
         folders: true,
-        fsrs: true,
+        containers: {
+          where: userId ? { userId } : undefined,
+        },
       },
     });
 
     if (!flashcard) {
       throw new NotFoundException(`Flashcard with ID ${id} not found`);
+    }
+
+    // If user is authenticated, ensure they have a container
+    if (userId) {
+      const container = await this.containerService.getContainer(userId, id);
+      flashcard.containers = [container];
     }
 
     return this.flashcardMapper.toResponse(flashcard);

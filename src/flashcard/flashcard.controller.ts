@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { FlashcardService } from './flashcard.service';
 import {
@@ -18,6 +19,9 @@ import {
   StudyProgressDto,
 } from './dto/flashcard.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PaginationQueryDto } from '../common/pagination/pagination.dto';
+import { PaginatedResponseDto } from '../common/pagination/pagination.dto';
+import { FlashcardResponseDto } from './dto/flashcard.dto';
 
 @Controller('flashcards')
 @UseGuards(JwtAuthGuard)
@@ -26,8 +30,18 @@ export class FlashcardController {
 
   // Flashcard Set Endpoints
   @Get()
-  async getFlashcards(@Request() req) {
-    return await this.flashcardService.getFlashcards(req.user.id);
+  async getFlashcards(
+    @Query() query: PaginationQueryDto,
+  ): Promise<PaginatedResponseDto<FlashcardResponseDto>> {
+    return this.flashcardService.getFlashcards(query);
+  }
+
+  @Get('my')
+  async getMyFlashcards(
+    @Query() query: PaginationQueryDto,
+    @Request() req,
+  ): Promise<PaginatedResponseDto<FlashcardResponseDto>> {
+    return this.flashcardService.getFlashcards(query, req.user.id);
   }
 
   @Get(':id')
